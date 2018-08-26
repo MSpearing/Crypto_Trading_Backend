@@ -8,6 +8,7 @@ import psycopg2 as pg
 import logging
 import config
 
+#TODO: This should probably be broken out into two files: currency the class and a script to pull in the data
 
 class Currency:
     def __init__(self, name, base):
@@ -23,18 +24,14 @@ class Currency:
 
     def make_Connection(self):
         # Make Connection to RDS instance
-        print("Making Connection")
         self.conn = pg.connect(database=config.db, user=config.username, password=config.password, host=config.host, port=config.port)
         self.cur = self.conn.cursor()
-        print("Connection Made")
         return(self.conn, self.cur)
     
     def end_connection(self):
         # TODO: Make safe if invalid connection 
-        print("Ending Connection")
         self.conn.close()
         self.cur.close()
-        print("Connection Ended")
 
     def store_data(self):
         trading_url = config.trading_url
