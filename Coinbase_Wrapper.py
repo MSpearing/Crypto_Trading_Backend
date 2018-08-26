@@ -23,14 +23,18 @@ class Currency:
 
     def make_Connection(self):
         # Make Connection to RDS instance
+        print("Making Connection")
         self.conn = pg.connect(database=config.db, user=config.username, password=config.password, host=config.host, port=config.port)
         self.cur = self.conn.cursor()
+        print("Connection Made")
         return(self.conn, self.cur)
     
     def end_connection(self):
         # TODO: Make safe if invalid connection 
+        print("Ending Connection")
         self.conn.close()
         self.cur.close()
+        print("Connection Ended")
 
     def store_data(self):
         trading_url = config.trading_url
@@ -55,8 +59,8 @@ class Currency:
             self.conn.commit()
         
         # Run for 2 min in stead of indefinitely
-        #for i in range(12):
-        while(True):
+        for i in range(12):
+        #while(True):
             response = requests.get(trading_url +'/products/{}-{}/book?level=1'.format(self.name.upper(), self.base.upper()))
             now = int(time.time())
             pd_response = pd.read_json(response.text)
