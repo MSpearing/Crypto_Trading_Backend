@@ -59,8 +59,8 @@ class Currency:
             self.conn.commit()
         
         # Run for 2 min in stead of indefinitely
-        for i in range(12):
-        #while(True):
+        #for i in range(12):
+        while(True):
             response = requests.get(trading_url +'/products/{}-{}/book?level=1'.format(self.name.upper(), self.base.upper()))
             now = int(time.time())
             pd_response = pd.read_json(response.text)
