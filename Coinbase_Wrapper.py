@@ -17,13 +17,13 @@ class Currency:
         self.conn = None
         self.cur = None
 
-        # Set up Logging
+        # Set up Logging - If the logging file exists, it will be appended.
         self.log_file = 'logs/{}_{}.log'.format(self.name.lower(), self.base.lower())
         logging.basicConfig(filename=self.log_file, level=logging.DEBUG)
 
     def make_Connection(self):
         # Make Connection to RDS instance
-        self.conn = pg.connect(database=config.db, user=config.username, password=config.password, host=config.host)
+        self.conn = pg.connect(database=config.db, user=config.username, password=config.password, host=config.host, port=config.port)
         self.cur = self.conn.cursor()
         return(self.conn, self.cur)
     
@@ -34,10 +34,30 @@ class Currency:
 
     def store_data(self):
         trading_url = config.trading_url
-        #while(True):
+       
+        # If the table does not exist, create it
+        sql = ( "SELECT EXISTS "
+                "(SELECT 1 FROM information_schema.tables "
+                "WHERE table_schema = 'public' "
+                "AND table_name = '{}_{}')").format(self.name.lower(), self.base.lower())
+        self.cur.execute(sql)
+        if(self.cur.fetchone() != 'true'):
+            sql = ("CREATE TABLE public.btc_usd "
+            "(timestamp integer NOT NULL, "
+            "ask_price double precision, "
+            "ask_size double precision, "
+            "ask_num_orders integer, "
+            "bid_price double precision, "
+            "bid_size double precision, "
+            "bid_num_orders integer, "
+            "PRIMARY KEY (timestamp))")
+            self.cur.execute(sql)
+            self.conn.commit()
+        
         # Run for 2 min in stead of indefinitely
-        for i in range(12):
-            response = requests.get(trading_url +'/products/BTC-USD/book?level=1')
+        #for i in range(12):
+        while(True):
+            response = requests.get(trading_url +'/products/{}-{}/book?level=1'.format(self.name.upper(), self.base.upper()))
             now = int(time.time())
             pd_response = pd.read_json(response.text)
             pd_response = pd_response.drop('sequence', axis=1)
@@ -54,7 +74,7 @@ class Currency:
 
             price = round((ask_price+bid_price)/2,2)
             logging.info("[{}] BID: {} ASK: {} AVG: {}".format(now, bid_price, ask_price, price))
-            sql = ("INSERT INTO btc_usd VALUES ({}, {}, {}, {}, {}, {}, {})").format(now, ask_price, ask_size, ask_num_orders, bid_price, bid_size, bid_num_orders)
+            sql = ("INSERT INTO {}_{} VALUES ({}, {}, {}, {}, {}, {}, {})").format(self.name.lower(), self.base.lower(), now, ask_price, ask_size, ask_num_orders, bid_price, bid_size, bid_num_orders)
             self.cur.execute(sql)
             self.conn.commit()
             time.sleep(config.delay)
