@@ -45,7 +45,7 @@ class Currency:
                 "WHERE table_schema = 'public' "
                 "AND table_name = '{}_{}')").format(self.name.lower(), self.base.lower())
         self.cur.execute(sql)
-        if(self.cur.fetchone() != 'true'):
+        if(not self.cur.fetchone()[0]):
             sql = ("CREATE TABLE public.btc_usd "
             "(timestamp integer NOT NULL, "
             "ask_price double precision, "
